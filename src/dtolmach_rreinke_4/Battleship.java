@@ -8,6 +8,7 @@ package dtolmach_rreinke_4;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -36,56 +37,47 @@ import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 
-public class Battleship implements ActionListener
+public class Battleship 
 {
   // Somewhat arbitrary, but see the section titled Understanding Ports:
   // http://docs.oracle.com/javase/tutorial/networking/overview/networking.html
   private static final int PORT = 51042;
   
-  private SimpleChatServer server;
-  private SimpleChatClient client;
+  private GameServer server;
+  private GameClient client;
   private MessageSender sender;
   private Thread listener;
 
   private JFrame frame;
   private JTextArea messageArea;
-  private JTextField messageField;
-  private String myUsername, theirUsername;
+  private static String myUsername;
 
-  public Battleship()
+  private String theirUsername;
+
+  public Battleship() throws IOException
   {
     // Add a random 3-digit number for debugging when both server and client are on the same machine...
     this.myUsername = System.getenv( "USERNAME" ) + ( (int)( Math.random() * 900 + 100 ) );
 
-    this.frame = new JFrame( "Battleship: " + this.myUsername );
-    this.frame.setLayout( new BorderLayout() );
-    this.frame.setLocation( 42, 42 );
-    this.frame.setForeground( Color.WHITE );
-    this.frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-    this.frame.addWindowListener( new ChatWindowListener() );
-
-    // A multi-line, non-editable text area for the chat messages.
+    GridLayout layout = new GridLayout(2, 0);
+	layout.setHgap(10);
+	this.frame = new JFrame("Welcome to Battleship!");
+	this.frame.setSize(800, 600);
+	this.frame.setVisible(true);
+	this.frame.setLayout(layout);
+	
+	// A multi-line, non-editable text area for the chat messages.
     this.messageArea = new JTextArea( 20, 40 );
     this.messageArea.setEditable( false );
     this.messageArea.setLineWrap( true );
     this.messageArea.setWrapStyleWord( true );
-
-//    // A single-line, editable, text area to type new messages.
-//    this.messageField = new JTextField( 40 );
-//    this.messageField.setEnabled( false );
-//    this.messageField.addActionListener( this );
-    
-    JPanel panel = new JPanel();
-    panel.setBackground( Color.WHITE );
-    panel.setBorder( BorderFactory.createTitledBorder( "Messages" ) );
-    panel.add( new JScrollPane( this.messageArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER ) );
-    this.frame.add( panel, BorderLayout.CENTER );
-    
-//    panel = new JPanel();
-//    panel.setBackground( Color.WHITE );
-//    panel.setBorder( BorderFactory.createTitledBorder( "Message" ) );
-//    panel.add( this.messageField );
-//    this.frame.add( panel, BorderLayout.SOUTH );
+	
+	InteractionPanel interact = new InteractionPanel(myUsername, true);
+	interact.add( new JScrollPane( this.messageArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER ) );
+	frame.add(interact);
+	
+	MyPanel myPanel = new MyPanel(myUsername, this);
+	frame.add(myPanel);    
     
     JMenuBar menuBar = new JMenuBar();
     menuBar.add( createFileMenu() );
@@ -93,9 +85,8 @@ public class Battleship implements ActionListener
     this.frame.setJMenuBar( menuBar );
 
     this.frame.pack();
-    this.frame.setVisible( true );
+    this.frame.setVisible( true ); 
     
-//    this.messageField.requestFocus();
   }
 
   private JMenu createFileMenu()
@@ -125,6 +116,11 @@ public class Battleship implements ActionListener
     return fileMenu;
   }
   
+  private void setMsgArea(String msg)
+  {
+	  messageArea.append( myUsername + ": " + msg + "\n" );
+  }
+  
   private class FileMenuListener implements ActionListener
   {
     @Override
@@ -135,14 +131,14 @@ public class Battleship implements ActionListener
       {
         case "New Game..." :
           //JOptionPane.showMessageDialog( frame, "Start a chat server/client here...", ae.getActionCommand(), JOptionPane.INFORMATION_MESSAGE );
-          server = new SimpleChatServer( messageArea );
+          server = new GameServer( messageArea );
           sender = server;
           listener = new Thread( server );
           listener.start();
           break;
         case "Join Game..." :
           //JOptionPane.showMessageDialog( frame, "Start a chat server/client here...", ae.getActionCommand(), JOptionPane.INFORMATION_MESSAGE );
-          client = new SimpleChatClient( messageArea );
+          client = new GameClient( messageArea );
           sender = client;
           listener = new Thread( client );
           listener.start();
@@ -193,33 +189,22 @@ public class Battleship implements ActionListener
       JOptionPane.showMessageDialog( frame, message, ae.getActionCommand(), JOptionPane.INFORMATION_MESSAGE );
     }
   }
-
-  @Override
-  public void actionPerformed( ActionEvent arg0 )
-  {
-    String message = this.messageField.getText();
-    this.messageField.setText( "" );
-    this.messageArea.append( this.myUsername + ": " + message + "\n" );
-
-    // this.sender is set in the actionPerfermed method when a server or client is created.
-    // Since this.sender is an instance of either SimpleChatServer or SimpleChatClient,
-    // and both of those classes implement MessageSender, we're sure this.sender can do this.
-    this.sender.sendMessage( message );
+  
+  public static void setCellClicked(String message, Battleship b){
+	  System.out.println("Name of clicked cell is: " + message);
+	  b.setMsgArea(message);
+	  
+	  // this.sender is set in the actionPerfermed method when a server or client is created.
+	  // Since this.sender is an instance of either SimpleChatServer or SimpleChatClient,
+	  // and both of those classes implement MessageSender, we're sure this.sender can do this.
+	  b.sender.sendMessage(message);
   }
 
   public static void main( String args[] )
   {
-    // Make GUI look like normal operating system GUI rather than
-    // Java's default six-year-old-with-a-crayon look.
     try
     {
       javax.swing.UIManager.setLookAndFeel( javax.swing.UIManager.getSystemLookAndFeelClassName() );
-
-      // For reference, this would show all of the installed options:
-      // for( LookAndFeelInfo info : UIManager.getInstalledLookAndFeels() )
-      // {
-      //   System.out.println( info.getName() + " " + info.getClassName() );
-      // }
     }
     catch( Exception e )
     {
@@ -238,7 +223,12 @@ public class Battleship implements ActionListener
       {
         public void run()
         {
-          new Battleship();
+          try {
+			new Battleship();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
         }
       } );
     }
@@ -261,14 +251,18 @@ public class Battleship implements ActionListener
   /*
    * Adapted from http://docs.oracle.com/javase/tutorial/networking/sockets/index.html
    */
-  private class SimpleChatServer implements Runnable, MessageSender
+  private class GameServer implements Runnable, MessageSender
   {
 	private JTextArea messages;
     private PrintWriter output;
+    private boolean myMove;
+//    Player p;
 
-    public SimpleChatServer( JTextArea messages )
+    public GameServer( JTextArea messages )
     {
     	this.messages = messages;
+    	myMove = true;
+//    	p = new Player();
     }
 
     public void sendMessage( String message )
@@ -292,6 +286,14 @@ public class Battleship implements ActionListener
 
       try( ServerSocket serverSocket = new ServerSocket( PORT );
            Socket clientSocket = serverSocket.accept();  // Blocks until a connection is made.
+    	   
+//    	   if (myMove == true) {
+//    		   //make a move
+//    	   } else {
+//    		   //accept the move
+//    	   }
+    	   
+    	   
            BufferedReader in = new BufferedReader( new InputStreamReader( clientSocket.getInputStream() ) );
            PrintWriter out = new PrintWriter( clientSocket.getOutputStream(), true ); )
       {
@@ -312,7 +314,7 @@ public class Battleship implements ActionListener
         do
         {
           message = in.readLine();  // Blocks until a message is received.
-//          messages.append( theirUsername + ": " + message + "\n" );
+          messages.append( theirUsername + ": " + message + "\n" );
         }
         while( !message.equalsIgnoreCase( "GoodBye" ) );
         
@@ -320,7 +322,7 @@ public class Battleship implements ActionListener
         out.println( "GoodBye" );
 
         // Disable the message JTextField so it looks like things are done.
-        messageField.setEnabled( false );
+//        messageField.setEnabled( false );
       }
       catch( IOException e )
       {
@@ -333,14 +335,18 @@ public class Battleship implements ActionListener
   /*
    * Adapted from http://docs.oracle.com/javase/tutorial/networking/sockets/index.html
    */
-  private class SimpleChatClient implements Runnable, MessageSender
+  private class GameClient implements Runnable, MessageSender
   {
 	private JTextArea messages;
     private PrintWriter output;
+    private boolean myMove;
+//    private Player p;
 
-    public SimpleChatClient( JTextArea messages )
+    public GameClient( JTextArea messages )
     {
     	this.messages = messages;
+    	myMove = false;
+//    	p = new Player();
     }
     
     public void sendMessage( String message )
@@ -391,7 +397,7 @@ public class Battleship implements ActionListener
         do
         {
           message = in.readLine();  // Blocks until a message is received.
-//          messages.append( theirUsername + ": " + message + "\n" );
+          messages.append( theirUsername + ": " + message + "\n" );
         }
         while( !message.equalsIgnoreCase( "GoodBye" ) );
 

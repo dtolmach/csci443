@@ -6,7 +6,7 @@ import java.util.Arrays;
 public class Player {
 	
 	public enum State {
-	    MISS, HIT, KILL, SHIP, EMPTY 
+	    MISS, HIT, SUNK, SHIP, EMPTY 
 	}
 	
 	private final static int N = 10; 
@@ -72,7 +72,7 @@ public class Player {
 	public void sinkShip(Ship s)
 	{
 		for (Cell c: s.cells) 
-			myBoard[c.l][c.n] = State.KILL;
+			myBoard[c.l][c.n] = State.SUNK;
 		mySunkShips++;
 	}
 	

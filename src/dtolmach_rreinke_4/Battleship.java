@@ -209,7 +209,7 @@ public class Battleship
       switch( ae.getActionCommand() )
       {
        case "About..." :
-          message = "Battleship\n\nCS 443, Spring 2014\n\nAuthor: Daria Tolmacheva, Rachel Reinke\n\n";
+          message = "Battleship\n\nCS 443, Spring 2014\n\n\n";
           break;
       }
       JOptionPane.showMessageDialog( frame, message, ae.getActionCommand(), JOptionPane.INFORMATION_MESSAGE );

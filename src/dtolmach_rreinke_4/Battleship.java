@@ -150,6 +150,7 @@ public class Battleship
           server = new GameServer( messageArea, myPanelHolder );          
           sender = server;
           myPanelHolder.add(new CreateBoard(myPanelHolder, myUsername, sender, messageArea));
+          myPanelHolder.revalidate();
           listener = new Thread( server );
           listener.start();
           break;
@@ -158,6 +159,7 @@ public class Battleship
           client = new GameClient( messageArea, myPanelHolder );          
           sender = client;
           myPanelHolder.add(new CreateBoard(myPanelHolder, myUsername, sender, messageArea));
+          myPanelHolder.revalidate();
           listener = new Thread( client );
           listener.start();
           break;
@@ -215,15 +217,15 @@ public class Battleship
  * @throws IOException 
    */
   public static void setCellClicked(String message, MessageSender sender2, JTextArea messageA) throws IOException{
-	  messageA.append("Username clicked: " + message);
-	  sender2.setLastClicked(Integer.parseInt(message));
-	  sender2.sendMessage(message);
-	  sender2.repaint();
+	  messageA.append(myUsername + " clicked on " + message + "\n");
+	  sender2.sendMessage("NUM");
+	  sender2.sendMessage(message);	  
 	  //repaint board and disable it for opponents move
+	  sender2.repaint(false);
   }
   
   public static void callSenderSetBoard(MessageSender sender2, ArrayList<Integer> cellsClicked) {
-	  sender2.createBoard(cellsClicked);		
+	  sender2.addShipToBoard(cellsClicked);		
 	}
 
   public static void main( String args[] )
@@ -273,8 +275,10 @@ public class Battleship
   {
     public void sendMessage( String message );	
     public void setLastClicked(int parseInt);
-	public void createBoard(ArrayList<Integer> cellsClicked);
-    public void repaint() throws IOException;
+	public void addShipToBoard(ArrayList<Integer> cellsClicked);
+    public void showBoards() throws IOException;
+    public void repaint(boolean enabled);
+    
   }
 
   /*
@@ -286,6 +290,7 @@ public class Battleship
     private PrintWriter output;
     Player p;
     private int lastClick;
+    private MyPanel myPanel;
 
     public GameServer( JTextArea messages, JPanel myPanelHolder )
     {
@@ -298,98 +303,20 @@ public class Battleship
       this.output.println( message );
     }
 
-    
-    @Override
-    public void run()
-    {
-      // connect to some host 
-      try
-      {
-    	InetAddress.getLocalHost().getHostAddress();
-        messages.append( "Connect to " + InetAddress.getLocalHost().getHostAddress() + " ...\n" );
-      }
-      catch( UnknownHostException e )
-      {
-        e.printStackTrace();
-        System.exit( 1 );
-      }
-      
-      try( ServerSocket serverSocket = new ServerSocket( PORT );
-           Socket clientSocket = serverSocket.accept();  // Blocks until a connection is made.
-    	   
-           BufferedReader in = new BufferedReader( new InputStreamReader( clientSocket.getInputStream() ) );
-           PrintWriter out = new PrintWriter( clientSocket.getOutputStream(), true ); )
-      {
-        // initial setup to connect to socket
-        this.output = out;        
-        theirUsername = in.readLine();
-        out.println("USER");
-        out.println( myUsername );
-        messages.append( "Connected to " + theirUsername + ".\n" );
-
-        
-        String message;
-        do
-        {
-          message = in.readLine();  // Blocks until a message is received.
-         
-          if (message.equals("NUM")) {
-        	  message = in.readLine();
-        	  int num;
-              try{
-            	  num = Integer.parseInt(message);
-              } catch(NumberFormatException nfe)   {
-            	  num = -1;
-              }
-              
-              if (num >= 0) {
-    	          p.validateOpponentMove(num);
-    	          State s  = p.getMyBoardState(num);
-    	          out.println("STATE");
-    	          out.println(stateToString(s));
-    	          
-    	          
-    	          //check if the game is over
-    	          if (p.getMySunkShips() == maxShips){
-    	        	  //game over
-    	        	  out.println("GAMEOVER");
-    	          }
-    	          //repaint board and enable for move
-//    	         repaint();
-    	      }
-          }
-          else if (message.equals("STATE")) {
-        	  message = in.readLine();
-        	  if (message.equals("hit"))
-        		  p.setOpponentState(State.HIT, lastClick);
-        	  if (message.equals("sunk"))
-        		  p.setOpponentState(State.SUNK, lastClick);
-        	  if (message.equals("miss"))
-        		  p.setOpponentState(State.MISS, lastClick);
-          }
-        }
-        while( !message.equalsIgnoreCase( "GoodBye" ) );
-        
-        // Send the "GoodBye" message back to stop the other thread.
-        out.println( "GoodBye" );
-
-      }
-      catch( IOException e )
-      {
-        e.printStackTrace();
-        System.exit( 1 );
-      }
-    }
-
 	@Override
-	public void createBoard(ArrayList<Integer> cellsClicked) {
-		p.addShip(new Ship(cellsClicked));		
+	public void addShipToBoard(ArrayList<Integer> cellsClicked) {
+		Ship s = new Ship();
+		for(int c: cellsClicked)
+			s.addCell(c);
+		p.addShip(s);		
+		//
 	}
 
 	@Override
-	public void repaint() throws IOException {
+	public void showBoards() throws IOException {
 		myPanelHolder.removeAll();
-	    myPanelHolder.add(new MyPanel(myUsername, sender, messageArea, p.getMyBoard(), p.getOppBoard()));
+		myPanel = new MyPanel(myUsername, sender, messageArea, p.getMyBoard(), p.getOppBoard(), true);
+	    myPanelHolder.add(myPanel);
 		
 	}
 
@@ -397,7 +324,121 @@ public class Battleship
 	public void setLastClicked(int parseInt) {
 		lastClick = parseInt;		
 	}
-  }
+
+	@Override
+	public void run() {
+		try
+	      {
+	        messages.append( "Connect to " + InetAddress.getLocalHost().getHostAddress() + " ...\n" );
+	      }
+	      catch( UnknownHostException e )
+	      {
+	        e.printStackTrace();
+	        System.exit( 1 );
+	      }
+
+	      try( ServerSocket serverSocket = new ServerSocket( PORT );
+	           Socket clientSocket = serverSocket.accept();  // Blocks until a connection is made.
+	           BufferedReader in = new BufferedReader( new InputStreamReader( clientSocket.getInputStream() ) );
+	           PrintWriter out = new PrintWriter( clientSocket.getOutputStream(), true ); )
+	      {
+	        // Save a reference to the output connection for use by sendMessage method.
+	        this.output = out;
+
+	        // Exchange user names.
+	        theirUsername = in.readLine();
+	        out.println( myUsername );
+	        messages.append( "Connected to " + theirUsername + ".\n" );
+
+	        
+
+	        // Sending messages will happen on the GUI thread by calling the sendMessage method.
+	        // Thus, this thread only needs to listen for messages and display them.
+	        String message;
+	        do
+	        {
+	          message = in.readLine();  // Blocks until a message is received.
+	          if (message.equals("MSG")) {
+	        	  message = in.readLine();
+	        	  messages.append(message + "\n");
+	          }
+	          else if (message.equals("NUM")) {
+	        	  message = in.readLine();
+	        	  messages.append(theirUsername + "clicked on " + message + "\n");
+	        	  int num;
+	        	  try {
+	        		  num = Integer.parseInt(message);
+	        	  } catch (NumberFormatException nfe) {
+	        		  num = -1;
+	        	  }
+	        	  if (num >= 0) {
+	        		  p.validateOpponentMove(num);
+	        		  State s = p.getMyBoardState(num);
+	        		  messages.append(" -- " + stateToString(s));
+	        		  // send state to opponent
+	        		  out.println("STATE");
+	        		  out.println(num);
+	        		  out.println(stateToString(s));
+	        		  repaint(true);
+	        		  
+	        		  // check if game is over
+	        		  if (p.getMySunkShips() == maxShips){
+	        			  messages.append("GAME OVER \n");
+	        			  out.println("GAME OVER");
+	        			  repaint(false);
+	        		  }
+	        	  }
+	          }
+	          else if (message.equals("STATE")) {
+	        	  message = in.readLine();
+	        	  int num;
+	        	  try {
+	        		  num = Integer.parseInt(message);
+	        	  } catch (NumberFormatException nfe) {
+	        		  num = -1;
+	        	  }
+	        	  message = in.readLine();
+	        	  messages.append(" -- " + message);
+	        	  if (num >=0) {
+		        	  if (message.equals("hit")) p.setOpponentState(State.HIT, num);
+		        	  if (message.equals("sunk")) p.setOpponentState(State.SUNK, num);
+		        	  if (message.equals("miss")) p.setOpponentState(State.MISS, num);
+	        	  }
+	          }
+//	          repaint(true);      
+	        	  
+	        }
+	        while( !message.equalsIgnoreCase( "GoodBye" ) );
+	        
+	        // Send the "GoodBye" message back to stop the other thread.
+	        out.println( "GoodBye" );
+
+	        
+	      }
+	      catch( IOException e )
+	      {
+	        e.printStackTrace();
+	        System.exit( 1 );
+	      }
+	    }
+
+	@Override
+	public void repaint(boolean enabled) {
+		myPanelHolder.removeAll();
+		try {
+			myPanel = new MyPanel(myUsername, sender, messageArea, p.getMyBoard(), p.getOppBoard(), enabled);
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		myPanelHolder.add(myPanel);
+		myPanelHolder.revalidate();
+		
+	}
+		
+	}
+  
 
   /*
    * Adapted from http://docs.oracle.com/javase/tutorial/networking/sockets/index.html
@@ -409,6 +450,7 @@ public class Battleship
     private boolean myMove;
     private Player p;
     private int lastClick;
+    private MyPanel myPanel;
 
     public GameClient( JTextArea messages, JPanel myPanelHolder )
     {
@@ -421,7 +463,8 @@ public class Battleship
     {
       this.output.println( message );
     }
-
+    
+    /**
      @Override
     public void run()
     {
@@ -451,6 +494,7 @@ public class Battleship
         this.output = out;
 
         // Exchange user names.
+        out.println("USER");
         out.println( myUsername );
         String line = in.readLine();
         if (line.equals("USER"))
@@ -502,6 +546,9 @@ public class Battleship
           	  if (message.equals("miss"))
           		  p.setOpponentState(State.MISS, lastClick);
             }
+            else if (message.equals("MSG")) {
+          	  messages.append(in.readLine());
+            }
         }
         while( !message.equalsIgnoreCase( "GoodBye" ) );
 
@@ -524,17 +571,22 @@ public class Battleship
         System.exit( 1 );
       }
     }
+    **/
 
 	@Override
-	public void createBoard(ArrayList<Integer> cellsClicked) {
-		p.addShip(new Ship(cellsClicked));
+	public void addShipToBoard(ArrayList<Integer> cellsClicked) {
+		Ship s = new Ship();
+		for(int c: cellsClicked)
+			s.addCell(c);
+		p.addShip(s);
 		
 	}
 
 	@Override
-	public void repaint() throws IOException {
+	public void showBoards() throws IOException {
 		myPanelHolder.removeAll();
-	    myPanelHolder.add(new MyPanel(myUsername, sender, messageArea, p.getMyBoard(), p.getOppBoard()));
+		myPanel = new MyPanel(myUsername, sender, messageArea, p.getMyBoard(), p.getOppBoard(), false);
+	    myPanelHolder.add(myPanel);
 		
 	}
 
@@ -543,15 +595,143 @@ public class Battleship
 		lastClick = parseInt;
 		
 	}
-  }
+
+	@Override
+	public void run() {
+		String ip = JOptionPane.showInputDialog( frame, "Enter IP address for server:", "HelloClient", JOptionPane.QUESTION_MESSAGE );
+
+	      // For debugging when both server and client are on the same machine...
+	      if( ip == null || ip.isEmpty() )
+	      {
+	        try
+	        {
+	          ip = InetAddress.getLocalHost().getHostAddress();
+	        }
+	        catch( UnknownHostException e )
+	        {
+	          e.printStackTrace();
+	          System.exit( 1 );
+	        }
+	      }
+	      messages.append( "Connecting to " + ip + " ...\n" );
+
+	      try ( Socket clientSocket = new Socket( ip, PORT );
+	           BufferedReader in = new BufferedReader( new InputStreamReader( clientSocket.getInputStream() ) );
+	           PrintWriter out = new PrintWriter( clientSocket.getOutputStream(), true ); )
+	      {
+	        // Save a reference to the output connection for use by sendMessage method.
+	        this.output = out;
+
+	        // Exchange user names.
+	        out.println( myUsername );
+	        theirUsername = in.readLine();
+	        messages.append( "Connected to " + theirUsername + ".\n" );
+
+	        
+
+	        // Sending messages will happen on the GUI thread by calling the sendMessage method.
+	        // Thus, this thread only needs to listen for messages and display them.
+	        String message;
+	        do
+	        {
+	        	message = in.readLine();  // Blocks until a message is received.
+		          if (message.equals("MSG")) {
+		        	  message = in.readLine();
+		        	  messages.append(message + "\n");
+		          }
+		          else if (message.equals("NUM")) {
+		        	  message = in.readLine();
+		        	  messages.append(theirUsername + "clicked on " + message + "\n");
+		        	  int num;
+		        	  try {
+		        		  num = Integer.parseInt(message);
+		        	  } catch (NumberFormatException nfe) {
+		        		  num = -1;
+		        	  }
+		        	  if (num >= 0) {
+		        		  p.validateOpponentMove(num);
+		        		  State s = p.getMyBoardState(num);
+		        		  messages.append(" -- " + stateToString(s));
+		        		  // send state to opponent
+		        		  out.println("STATE");
+		        		  out.println(num);
+		        		  out.println(stateToString(s));
+		        		  
+		        		  //enable board
+		        		  repaint(true);
+		        		  
+		        		  // check if game is over
+		        		  if (p.getMySunkShips() == maxShips){
+		        			  messages.append("GAME OVER \n");
+		        			  out.println("GAME OVER");
+		        			  //disable board if game is over
+		        			  repaint(false);
+		        		  }
+		        	  }
+		          }
+		          else if (message.equals("STATE")) {
+		        	  message = in.readLine();
+		        	  int num;
+		        	  try {
+		        		  num = Integer.parseInt(message);
+		        	  } catch (NumberFormatException nfe) {
+		        		  num = -1;
+		        	  }
+		        	  message = in.readLine();
+		        	  messages.append(" -- " + message);
+		        	  if (num >=0) {
+			        	  if (message.equals("hit")) p.setOpponentState(State.HIT, num);
+			        	  if (message.equals("sunk")) p.setOpponentState(State.SUNK, num);
+			        	  if (message.equals("miss")) p.setOpponentState(State.MISS, num);
+		        	  }
+		          }
+//		          repaint(true);
+		          
+	        }
+	        while( !message.equalsIgnoreCase( "GoodBye" ) );
+
+	        // Send the "GoodBye" message back to stop the other thread.
+	        out.println( "GoodBye" );
+
+	        
+	      }
+	      catch ( UnknownHostException e )
+	      {
+	        System.err.println( "Couldn't connect to: " + ip );
+	        e.printStackTrace();
+	        System.exit( 1 );
+	      }
+	      catch( IOException e )
+	      {
+	        System.err.println( "Couldn't get I/O for the connection to: " + ip );
+	        e.printStackTrace();
+	        System.exit( 1 );
+	      }
+	    }
+
+	@Override
+	public void repaint(boolean enabled) {
+		myPanelHolder.removeAll();
+		try {
+			myPanel = new MyPanel(myUsername, sender, messageArea, p.getMyBoard(), p.getOppBoard(),enabled);
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		myPanelHolder.add(myPanel);
+		myPanelHolder.revalidate();
+		
+	}
+		
+	}
+  
   
   public String stateToString(State s)
   {
-	  switch(s) {
-	  	case MISS: return "miss";
-	  	case HIT:  return "hit";
-	  	case SUNK: return "sunk";
-	  }
+	  if (s == State.MISS) return "miss";
+	  if (s == State.HIT)  return "hit";
+	  if (s == State.SUNK) return "sunk";
 	  return "";
 		    
   }

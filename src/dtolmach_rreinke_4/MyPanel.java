@@ -31,7 +31,7 @@ public class MyPanel extends JPanel {
 	State myb[] = new State[64];
 	State opb[] = new State[64];
 	
-	public MyPanel(String name, final MessageSender sender, final JTextArea messageArea, State myb[], State opb[]) throws IOException {
+	public MyPanel(String name, final MessageSender sender, final JTextArea messageArea, State myb[], State opb[], boolean enabled) throws IOException {
 		
 		Font myFont1 = new Font("Comic Sans MS", Font.BOLD, 20);
 		GridLayout layout1 = new GridLayout(0, 2);
@@ -56,9 +56,7 @@ public class MyPanel extends JPanel {
 		
 		for(int i = 0; i < 64; i++) {	
 			JLabel test = new JLabel();
-			if (myb == null)
-				test.setIcon(createImageIcon("Ocean_Square.jpg",i + ""));
-			else {
+			
 			if (myb[i] == State.EMPTY)
 				test.setIcon(createImageIcon("Ocean_Square.jpg",i + ""));
 			if (myb[i] == State.HIT)
@@ -69,7 +67,7 @@ public class MyPanel extends JPanel {
 				test.setIcon(createImageIcon("miss.png",i + ""));
 			if (myb[i] == State.SUNK)
 				test.setIcon(createImageIcon("sunken.png",i + ""));
-			}
+			
 			//test.setIcon(createImageIcon("miss.png", "A missile was fired, but missed"));
 			//test.setIcon(createImageIcon("hit.png", "A missile was fired, and hit"));
 			
@@ -82,21 +80,39 @@ public class MyPanel extends JPanel {
 			//Add a clicklistener to each label and have the picture change depending on
 			//whether or not something was hit
 			final JLabel test = new JLabel();
-			test.setIcon(createImageIcon("Ocean_Square.jpg", j + ""));
+			if (opb == null)
+				test.setIcon(createImageIcon("Ocean_Square.jpg", ""));
+			else {
+				if (opb[j] == State.EMPTY)
+					if (enabled == false)
+						test.setIcon(createImageIcon("grey.jpg", ""));
+					else
+						test.setIcon(createImageIcon("Ocean_Square.jpg",""));
+				if (opb[j] == State.HIT)
+					test.setIcon(createImageIcon("hit!.png",""));
+				if (opb[j] == State.SHIP)
+					test.setIcon(createImageIcon("Large_Ship.png", ""));
+				if (opb[j] == State.MISS)
+					test.setIcon(createImageIcon("miss.png",""));
+				if (opb[j] == State.SUNK)
+					test.setIcon(createImageIcon("sunken.png",""));
+			}
 			test.setName("" + j);
-			test.addMouseListener(new MouseAdapter() 
-			{
-				public void mouseClicked(MouseEvent e)  
-			    {
-					try {
-						Battleship.setCellClicked(test.getName(), sender, messageArea);
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
-					
-			    }			      
-			});
+			if (enabled == true) {
+				test.addMouseListener(new MouseAdapter() 
+				{
+					public void mouseClicked(MouseEvent e)  
+				    {
+						try {
+							Battleship.setCellClicked(test.getName(), sender, messageArea);
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						
+				    }			      
+				});
+			}
 			opponentPanel.add(test);
 				
 		}

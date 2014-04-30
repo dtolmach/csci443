@@ -91,7 +91,7 @@ public class CreateBoard extends JPanel {
 		addShip.addActionListener(new ActionListener() {
 	        @Override
 	        public void actionPerformed(ActionEvent e) {	            
-	        	Battleship.callSenderSetBoard(sender, cellsClicked);
+	        	sender.addShipToBoard(cellsClicked);
 	        	cellsClicked.clear();
 //	        	createNewShip();
 	        	System.out.println("created new ship");
@@ -106,7 +106,7 @@ public class CreateBoard extends JPanel {
 	        public void actionPerformed(ActionEvent e) {
 	        	try {
 	        		setVisible(false);
-					sender.repaint();
+					sender.showBoards();
 				} catch (IOException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();

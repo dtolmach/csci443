@@ -7,9 +7,14 @@ public class Ship {
 	
 	ArrayList<Integer> cells;
 	
-	public Ship(ArrayList<Integer> cells)
+	public Ship()
 	{
-		this.cells = cells;
+		cells = new ArrayList<Integer>();
+	}
+	
+	public void addCell(int c)
+	{
+		cells.add(c);
 	}
 	
 	public boolean containsCell(int c)

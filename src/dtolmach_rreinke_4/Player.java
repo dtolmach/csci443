@@ -64,7 +64,7 @@ public class Player {
 		State s = myBoard[c];
 		if (s == State.EMPTY){
 			myBoard[c] = State.MISS;
-		} else if (s == State.SHIP){
+		} else if (s == State.SHIP || s == State.HIT){
 			checkHit(c);
 		}
 	}

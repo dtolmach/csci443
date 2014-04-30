@@ -1,13 +1,9 @@
 package dtolmach_rreinke_4;
 
-/**
- * A simple GUI to be used to implement asynchronous chat using socket based
- * connections between two machines where one machine acts as the server and
- * the other machine acts as the client.
- */
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,6 +11,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -24,7 +21,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 
-import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -33,13 +29,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.OverlayLayout;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
-
-import dtolmach_rreinke_4.Battleship.MessageSender;
 
 
 public class Battleship 
@@ -79,13 +72,15 @@ public class Battleship
 	this.frame.setLayout(layout);
 	
 	// A multi-line, non-editable text area for the chat messages.
-    this.messageArea = new JTextArea( 20, 40 );
+    this.messageArea = new JTextArea( 20, 20 );
     this.messageArea.setEditable( false );
     this.messageArea.setLineWrap( true );
     this.messageArea.setWrapStyleWord( true );
+	this.messageArea.setFont(new Font("Comic Sans MS", Font.BOLD, 18));
+	this.messageArea.setForeground(Color.BLUE);
 	
-	InteractionPanel interact = new InteractionPanel(myUsername, true);
-	interact.add( new JScrollPane( this.messageArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER ) );
+	InteractionPanel interact = new InteractionPanel(myUsername);
+	interact.add( new JScrollPane( this.messageArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER ), BorderLayout.SOUTH );
 	frame.add(interact);
 	
 	this.myPanelHolder = new JPanel();
@@ -130,11 +125,6 @@ public class Battleship
     fileMenu.add( menuItem );
     
     return fileMenu;
-  }
-  
-  private void setMsgArea(String msg)
-  {
-	  messageArea.append( myUsername + ": " + msg + "\n" );
   }
   
   private class FileMenuListener implements ActionListener
@@ -185,8 +175,24 @@ public class Battleship
     
     JMenu helpMenu = new JMenu( "Help" );
     helpMenu.setMnemonic( KeyEvent.VK_H );
+    
+    JMenuItem menuItem = new JMenuItem( "Read Me...", KeyEvent.VK_A );
+    helpMenu.add( menuItem );
+    menuItem.addActionListener( new ActionListener() {
 
-    JMenuItem menuItem = new JMenuItem( "About...", KeyEvent.VK_A );
+		@Override
+		public void actionPerformed(ActionEvent arg0) {
+			try {
+				java.awt.Desktop.getDesktop().edit(new File("ReadMe.txt"));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+    	
+    });
+    
+    menuItem = new JMenuItem( "About...", KeyEvent.VK_B );
     helpMenu.add( menuItem );
     menuItem.addActionListener( listener );
     
@@ -202,8 +208,8 @@ public class Battleship
       // Switch statements with Strings is new in JDK 7.
       switch( ae.getActionCommand() )
       {
-        case "About..." :
-          message = "Simple Chat\n\nCS 443, Spring 2014\n\nAuthor: Dr. Randy Bower\n\n";
+       case "About..." :
+          message = "Battleship\n\nCS 443, Spring 2014\n\nAuthor: Daria Tolmacheva, Rachel Reinke\n\n";
           break;
       }
       JOptionPane.showMessageDialog( frame, message, ae.getActionCommand(), JOptionPane.INFORMATION_MESSAGE );
@@ -274,7 +280,6 @@ public class Battleship
   public interface MessageSender
   {
     public void sendMessage( String message );	
-    public void setLastClicked(int parseInt);
 	public void addShipToBoard(ArrayList<Integer> cellsClicked);
     public void showBoards() throws IOException;
     public void repaint(boolean enabled);
@@ -289,7 +294,6 @@ public class Battleship
 	private JTextArea messages;
     private PrintWriter output;
     Player p;
-    private int lastClick;
     private MyPanel myPanel;
 
     public GameServer( JTextArea messages, JPanel myPanelHolder )
@@ -318,11 +322,6 @@ public class Battleship
 		myPanel = new MyPanel(myUsername, sender, messageArea, p.getMyBoard(), p.getOppBoard(), true);
 	    myPanelHolder.add(myPanel);
 		
-	}
-
-	@Override
-	public void setLastClicked(int parseInt) {
-		lastClick = parseInt;		
 	}
 
 	@Override
@@ -374,7 +373,7 @@ public class Battleship
 	        	  if (num >= 0) {
 	        		  p.validateOpponentMove(num);
 	        		  State s = p.getMyBoardState(num);
-	        		  messages.append(" -- " + stateToString(s));
+	        		  messages.append(" -- " + stateToString(s) + "\n");
 	        		  // send state to opponent
 	        		  out.println("STATE");
 	        		  out.println(num);
@@ -383,8 +382,9 @@ public class Battleship
 	        		  
 	        		  // check if game is over
 	        		  if (p.getMySunkShips() == maxShips){
-	        			  messages.append("GAME OVER \n");
-	        			  out.println("GAME OVER");
+	        			  messages.append("MSG");
+	        			  messages.append(theirUsername + " WON THE GAME!!! \n");
+	        			  out.println(theirUsername + " WON THE GAME!!!");
 	        			  repaint(false);
 	        		  }
 	        	  }
@@ -398,7 +398,7 @@ public class Battleship
 	        		  num = -1;
 	        	  }
 	        	  message = in.readLine();
-	        	  messages.append(" -- " + message);
+	        	  messages.append(" -- " + message + "\n");
 	        	  if (num >=0) {
 		        	  if (message.equals("hit")) p.setOpponentState(State.HIT, num);
 		        	  if (message.equals("sunk")) p.setOpponentState(State.SUNK, num);
@@ -447,15 +447,12 @@ public class Battleship
   {
 	private JTextArea messages;
     private PrintWriter output;
-    private boolean myMove;
     private Player p;
-    private int lastClick;
     private MyPanel myPanel;
 
     public GameClient( JTextArea messages, JPanel myPanelHolder )
     {
     	this.messages = messages;
-    	myMove = false;
     	p = new Player();
     }
     
@@ -464,116 +461,7 @@ public class Battleship
       this.output.println( message );
     }
     
-    /**
-     @Override
-    public void run()
-    {
-      String ip = JOptionPane.showInputDialog( frame, "Enter IP address for server:", "HelloClient", JOptionPane.QUESTION_MESSAGE );
-
-      // For debugging when both server and client are on the same machine...
-      if( ip == null || ip.isEmpty() )
-      {
-        try
-        {
-          ip = InetAddress.getLocalHost().getHostAddress();
-        }
-        catch( UnknownHostException e )
-        {
-          e.printStackTrace();
-          System.exit( 1 );
-        }
-      }
-      
-      messages.append( "Connecting to " + ip + " ...\n" );
-
-      try( Socket clientSocket = new Socket( ip, PORT );
-           BufferedReader in = new BufferedReader( new InputStreamReader( clientSocket.getInputStream() ) );
-           PrintWriter out = new PrintWriter( clientSocket.getOutputStream(), true ); )
-      {
-        // Save a reference to the output connection for use by sendMessage method.
-        this.output = out;
-
-        // Exchange user names.
-        out.println("USER");
-        out.println( myUsername );
-        String line = in.readLine();
-        if (line.equals("USER"))
-        	theirUsername = in.readLine();
-        
-        messages.append( "Connected to " + theirUsername + ".\n" );
-
-        // Enable the message JTextField so it looks like things are ready to go.
-//        messageField.setEnabled( true );
-
-        // Sending messages will happen on the GUI thread by calling the sendMessage method.
-        // Thus, this thread only needs to listen for messages and display them.
-        String message;
-        do
-        {
-        	message = in.readLine();  // Blocks until a message is received.
-            
-            if (message.equals("NUM")) {
-          	  message = in.readLine();
-          	  int num;
-                try{
-              	  num = Integer.parseInt(message);
-                } catch(NumberFormatException nfe)   {
-              	  num = -1;
-                }
-                
-                if (num >= 0) {
-      	          p.validateOpponentMove(num);
-      	          State s  = p.getMyBoardState(num);
-      	          out.println("STATE");
-      	          out.println(stateToString(s));
-      	          
-      	          
-      	          //check if the game is over
-      	          if (p.getMySunkShips() == maxShips){
-      	        	  //game over
-      	        	  out.println("GAMEOVER");
-      	          }
-      	          //repaint board and enable for move
-//      	         repaint();
-      	      }
-            }
-            else if (message.equals("STATE")) {
-          	  message = in.readLine();
-          	  if (message.equals("hit"))
-          		  p.setOpponentState(State.HIT, lastClick);
-          	  if (message.equals("sunk"))
-          		  p.setOpponentState(State.SUNK, lastClick);
-          	  if (message.equals("miss"))
-          		  p.setOpponentState(State.MISS, lastClick);
-            }
-            else if (message.equals("MSG")) {
-          	  messages.append(in.readLine());
-            }
-        }
-        while( !message.equalsIgnoreCase( "GoodBye" ) );
-
-        // Send the "GoodBye" message back to stop the other thread.
-        out.println( "GoodBye" );
-
-        // Disable the message JTextField so it looks like things are done.
-//        messageField.setEnabled( false );
-      }
-      catch( UnknownHostException e )
-      {
-        System.err.println( "Couldn't connect to: " + ip );
-        e.printStackTrace();
-        System.exit( 1 );
-      }
-      catch( IOException e )
-      {
-        System.err.println( "Couldn't get I/O for the connection to: " + ip );
-        e.printStackTrace();
-        System.exit( 1 );
-      }
-    }
-    **/
-
-	@Override
+    @Override
 	public void addShipToBoard(ArrayList<Integer> cellsClicked) {
 		Ship s = new Ship();
 		for(int c: cellsClicked)
@@ -587,12 +475,6 @@ public class Battleship
 		myPanelHolder.removeAll();
 		myPanel = new MyPanel(myUsername, sender, messageArea, p.getMyBoard(), p.getOppBoard(), false);
 	    myPanelHolder.add(myPanel);
-		
-	}
-
-	@Override
-	public void setLastClicked(int parseInt) {
-		lastClick = parseInt;
 		
 	}
 
@@ -651,7 +533,7 @@ public class Battleship
 		        	  if (num >= 0) {
 		        		  p.validateOpponentMove(num);
 		        		  State s = p.getMyBoardState(num);
-		        		  messages.append(" -- " + stateToString(s));
+		        		  messages.append(" -- " + stateToString(s) + "\n");
 		        		  // send state to opponent
 		        		  out.println("STATE");
 		        		  out.println(num);
@@ -662,8 +544,9 @@ public class Battleship
 		        		  
 		        		  // check if game is over
 		        		  if (p.getMySunkShips() == maxShips){
-		        			  messages.append("GAME OVER \n");
-		        			  out.println("GAME OVER");
+		        			  messages.append(theirUsername + " WON THE GAME!!! \n");
+		        			  out.println("MSG");
+		        			  out.println(theirUsername + " WON THE GAME!!!");
 		        			  //disable board if game is over
 		        			  repaint(false);
 		        		  }

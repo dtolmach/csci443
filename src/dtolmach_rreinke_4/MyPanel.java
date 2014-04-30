@@ -1,21 +1,13 @@
 package dtolmach_rreinke_4;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-
-import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
@@ -26,8 +18,7 @@ import dtolmach_rreinke_4.Battleship.State;
 
 public class MyPanel extends JPanel {
 	
-	private enum State1 {NEITHER, HIT, MISS};
-	
+	private static final long serialVersionUID = 1L;
 	State myb[] = new State[64];
 	State opb[] = new State[64];
 	
@@ -131,15 +122,6 @@ public class MyPanel extends JPanel {
 		opponentPanelHolder.add(opponentBoard, BorderLayout.NORTH);
 		opponentPanelHolder.add(opponentPanel, BorderLayout.CENTER);
 		add(opponentPanelHolder);
-		
-	}
-	
-	public void setBoards(State mb[], State pb[])
-	{
-		for (int i=0; i<64; i++){
-			myb[i] = mb[i];
-			opb[i] = pb[i];
-		}
 		
 	}
 	

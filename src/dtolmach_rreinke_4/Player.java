@@ -19,12 +19,6 @@ public class Player {
 		Arrays.fill(opponent, State.EMPTY);
 		
 		mySunkShips = 0;
-		
-//		ArrayList<Integer> cells = new ArrayList<Integer>();
-//		cells.add(4);
-//		myShips.add(new Ship(cells));
-//		setBoard();
-			
 	}
 	
 	public void addShip(Ship s)
@@ -104,16 +98,6 @@ public class Player {
 	public State[] getOppBoard()
 	{
 		return opponent;
-	}
-	
-	public static void main( String args[] )
-	{
-		Player p = new Player();
-		State s = p.getMyBoardState(3);
-		State q = p.getMyBoardState(4);
-		p.validateOpponentMove(3);
-		p.validateOpponentMove(4);
-		
 	}
 
 }

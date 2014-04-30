@@ -42,6 +42,7 @@ public class Battleship
   // Somewhat arbitrary, but see the section titled Understanding Ports:
   // http://docs.oracle.com/javase/tutorial/networking/overview/networking.html
   private static final int PORT = 51042;
+  private static final int maxShips = 6;
   
   private GameServer server;
   private GameClient client;
@@ -53,6 +54,8 @@ public class Battleship
   private static String myUsername;
 
   private String theirUsername;
+  
+  
 
   public Battleship() throws IOException
   {
@@ -256,13 +259,13 @@ public class Battleship
 	private JTextArea messages;
     private PrintWriter output;
     private boolean myMove;
-//    Player p;
+    Player p;
 
     public GameServer( JTextArea messages )
     {
     	this.messages = messages;
     	myMove = true;
-//    	p = new Player();
+    	p = new Player();
     }
 
     public void sendMessage( String message )
@@ -340,13 +343,13 @@ public class Battleship
 	private JTextArea messages;
     private PrintWriter output;
     private boolean myMove;
-//    private Player p;
+    private Player p;
 
     public GameClient( JTextArea messages )
     {
     	this.messages = messages;
     	myMove = false;
-//    	p = new Player();
+    	p = new Player();
     }
     
     public void sendMessage( String message )
@@ -398,6 +401,12 @@ public class Battleship
         {
           message = in.readLine();  // Blocks until a message is received.
           messages.append( theirUsername + ": " + message + "\n" );
+          p.validateOpponentMove(Integer.parseInt(message));
+          //check if the game is over
+          if (p.getMySunkShips() == maxShips){
+        	  //game over
+        	  out.println( theirUsername + " won!!" );
+          }
         }
         while( !message.equalsIgnoreCase( "GoodBye" ) );
 

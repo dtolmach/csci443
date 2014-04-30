@@ -9,58 +9,66 @@ public class Player {
 	    MISS, HIT, SUNK, SHIP, EMPTY 
 	}
 	
-	private final static int N = 10; 
-	private State myBoard[][] = new State[N][N];
-	private State opponent[][] = new State[N][N];
+	private final static int N = 64; 
+	private State myBoard[] = new State[N];
+	private State opponent[] = new State[N];
 	private ArrayList<Ship> myShips = new ArrayList<Ship>();
 	private int mySunkShips;
 	
 	public Player()
 	{
-		for(int i=0; i<N; i++) {
-			Arrays.fill(myBoard, State.EMPTY);
-			Arrays.fill(opponent, State.EMPTY);
-		}
+		Arrays.fill(myBoard, State.EMPTY);
+		Arrays.fill(opponent, State.EMPTY);
+		
 		mySunkShips = 0;
+		
+		ArrayList<Integer> cells = new ArrayList<Integer>();
+		cells.add(new Integer(4));
+		myShips.add(new Ship(cells));
+		setBoard();
 			
 	}
 	
-	public void setBoard(boolean board[][])
+	public void addShip(Ship s)
 	{
-		for(int i=0; i<N; i++) {
-			for(int j=0; j<N; j++) {
-				if(board[i][j] == true)
-					myBoard[i][j] = State.SHIP;
+		myShips.add(s);
+	}
+	
+	public void setBoard()
+	{
+		for(Ship s : myShips) {
+			for(int c : s.cells) {
+				myBoard[c] = State.SHIP;
 			}
 		}
 	}
 	
-	public State getMyBoardState(int l, int n)
+	public State getMyBoardState(int c)
 	{
-		return myBoard[l][n];
+		return myBoard[c];
 	}
 	
-	public State getOpponentState(int l, int n)
+	public State getOpponentState(int c)
 	{
-		return opponent[l][n];
+		return opponent[c];
 	}
 	
-	public void validateOpponentMove(int l, int n)
+	public void validateOpponentMove(int c)
 	{
-		switch(myBoard[l][n]){
-			case EMPTY : myBoard[l][n] = State.MISS;
-			case SHIP  : checkHit(l, n);
+		switch(myBoard[c]){
+			case EMPTY : myBoard[c] = State.MISS;
+			case SHIP  : checkHit(c);
 			default : break;
 		}
 	}
 	
-	public void checkHit(int l, int n)
+	public void checkHit(int cell)
 	{
-		myBoard[l][n] = State.HIT;
+		myBoard[cell] = State.HIT;
 		for (Ship s : myShips) {
-			if (s.containsCell(l,n)) {
-				for (Cell c: s.cells) {
-					if(myBoard[c.l][c.n] != State.HIT)
+			if (s.containsCell(cell)) {
+				for (int c: s.cells) {
+					if(myBoard[c] != State.HIT)
 						return;
 				}
 				sinkShip(s);
@@ -71,11 +79,15 @@ public class Player {
 	
 	public void sinkShip(Ship s)
 	{
-		for (Cell c: s.cells) 
-			myBoard[c.l][c.n] = State.SUNK;
+		for (int c: s.cells) 
+			myBoard[c] = State.SUNK;
 		mySunkShips++;
 	}
 	
+	public int getMySunkShips()
+	{
+		return mySunkShips;
+	}
 	
 
 }

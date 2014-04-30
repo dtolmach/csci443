@@ -5,19 +5,16 @@ import java.util.List;
 
 public class Ship {
 	
-	ArrayList<Cell> cells;
+	ArrayList<Integer> cells;
 	
-	public Ship(ArrayList<Cell> cells)
+	public Ship(ArrayList<Integer> cells)
 	{
-		cells = this.cells;
+		this.cells = cells;
 	}
 	
-	public boolean containsCell(int l, int n)
+	public boolean containsCell(int c)
 	{
-		for(Cell c : cells)
-			if(c.equal(l,n))
-				return true;
-		return false;
+		return cells.contains(c);
 	}
 	
 }

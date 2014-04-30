@@ -10,6 +10,7 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -17,13 +18,20 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
+
+import dtolmach_rreinke_4.Battleship.MessageSender;
+import dtolmach_rreinke_4.Battleship.State;
 
 public class MyPanel extends JPanel {
 	
 	private enum State1 {NEITHER, HIT, MISS};
 	
-	public MyPanel(String name, final Battleship b) throws IOException {
+	State myb[] = new State[64];
+	State opb[] = new State[64];
+	
+	public MyPanel(String name, final MessageSender sender, final JTextArea messageArea, State myb[], State opb[]) throws IOException {
 		
 		Font myFont1 = new Font("Comic Sans MS", Font.BOLD, 20);
 		GridLayout layout1 = new GridLayout(0, 2);
@@ -32,7 +40,7 @@ public class MyPanel extends JPanel {
 		setSize(700, 200);
 		
 		GridLayout layout = new GridLayout(8, 8);
-		
+				
 		JPanel myPanel = new JPanel();
 		JPanel myPanelHolder = new JPanel();
 		myPanel.setLayout(layout);
@@ -45,11 +53,27 @@ public class MyPanel extends JPanel {
 		opponentPanel.setBorder(BorderFactory.createEtchedBorder());
 		opponentPanelHolder.setLayout(new BorderLayout());
 		
-		for(int i = 0; i < 64; i++) {			
+		
+		for(int i = 0; i < 64; i++) {	
 			JLabel test = new JLabel();
+			if (myb == null)
+				test.setIcon(createImageIcon("Ocean_Square.jpg",i + ""));
+			else {
+			if (myb[i] == State.EMPTY)
+				test.setIcon(createImageIcon("Ocean_Square.jpg",i + ""));
+			if (myb[i] == State.HIT)
+				test.setIcon(createImageIcon("hit!.png",i + ""));
+			if (myb[i] == State.SHIP)
+				test.setIcon(createImageIcon("Large_Ship.png",i + ""));
+			if (myb[i] == State.MISS)
+				test.setIcon(createImageIcon("miss.png",i + ""));
+			if (myb[i] == State.SUNK)
+				test.setIcon(createImageIcon("sunken.png",i + ""));
+			}
 			//test.setIcon(createImageIcon("miss.png", "A missile was fired, but missed"));
 			//test.setIcon(createImageIcon("hit.png", "A missile was fired, and hit"));
-			test.setIcon(createImageIcon("Ocean_Square.jpg",i + ""));
+			
+			
 			myPanel.add(test);
 			
 		}
@@ -64,7 +88,12 @@ public class MyPanel extends JPanel {
 			{
 				public void mouseClicked(MouseEvent e)  
 			    {
-					Battleship.setCellClicked(test.getName(), b);
+					try {
+						Battleship.setCellClicked(test.getName(), sender, messageArea);
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 					
 			    }			      
 			});
@@ -86,6 +115,15 @@ public class MyPanel extends JPanel {
 		opponentPanelHolder.add(opponentBoard, BorderLayout.NORTH);
 		opponentPanelHolder.add(opponentPanel, BorderLayout.CENTER);
 		add(opponentPanelHolder);
+		
+	}
+	
+	public void setBoards(State mb[], State pb[])
+	{
+		for (int i=0; i<64; i++){
+			myb[i] = mb[i];
+			opb[i] = pb[i];
+		}
 		
 	}
 	

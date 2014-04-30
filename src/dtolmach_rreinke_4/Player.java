@@ -3,11 +3,9 @@ package dtolmach_rreinke_4;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import dtolmach_rreinke_4.Battleship.State;
+
 public class Player {
-	
-	public enum State {
-	    MISS, HIT, SUNK, SHIP, EMPTY 
-	}
 	
 	private final static int N = 64; 
 	private State myBoard[] = new State[N];
@@ -22,16 +20,19 @@ public class Player {
 		
 		mySunkShips = 0;
 		
-		ArrayList<Integer> cells = new ArrayList<Integer>();
-		cells.add(new Integer(4));
-		myShips.add(new Ship(cells));
-		setBoard();
+//		ArrayList<Integer> cells = new ArrayList<Integer>();
+//		cells.add(4);
+//		myShips.add(new Ship(cells));
+//		setBoard();
 			
 	}
 	
 	public void addShip(Ship s)
 	{
 		myShips.add(s);
+		for(int c: s.cells) {
+			myBoard[c] = State.SHIP;
+		}
 	}
 	
 	public void setBoard()
@@ -53,12 +54,18 @@ public class Player {
 		return opponent[c];
 	}
 	
+	public void setOpponentState(State s, int c)
+	{
+		opponent[c] = s;
+	}
+	
 	public void validateOpponentMove(int c)
 	{
-		switch(myBoard[c]){
-			case EMPTY : myBoard[c] = State.MISS;
-			case SHIP  : checkHit(c);
-			default : break;
+		State s = myBoard[c];
+		if (s == State.EMPTY){
+			myBoard[c] = State.MISS;
+		} else if (s == State.SHIP){
+			checkHit(c);
 		}
 	}
 	
@@ -89,5 +96,24 @@ public class Player {
 		return mySunkShips;
 	}
 	
+	public State[] getMyBoard()
+	{
+		return myBoard;
+	}
+	
+	public State[] getOppBoard()
+	{
+		return opponent;
+	}
+	
+	public static void main( String args[] )
+	{
+		Player p = new Player();
+		State s = p.getMyBoardState(3);
+		State q = p.getMyBoardState(4);
+		p.validateOpponentMove(3);
+		p.validateOpponentMove(4);
+		
+	}
 
 }

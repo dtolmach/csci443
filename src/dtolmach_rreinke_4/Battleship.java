@@ -44,7 +44,7 @@ public class Battleship
   // Somewhat arbitrary, but see the section titled Understanding Ports:
   // http://docs.oracle.com/javase/tutorial/networking/overview/networking.html
   private static final int PORT = 51042;
-  private static final int maxShips = 1;
+  private static final int maxShips = 6;
   
   private GameServer server;
   private GameClient client;
